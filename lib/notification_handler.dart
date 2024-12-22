@@ -7,63 +7,49 @@ import 'firebase_options.dart';
 FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
 FlutterLocalNotificationsPlugin();
 
-Future<void> handleForegroundNotification(RemoteMessage message) async {
+// Function to handle foreground notifications
+void foregroundNotificationHandler(RemoteMessage message) async {
   try {
-    // Log notification details
-    print("***** Foreground Notification Received:");
-    print("**** Title: ${message.notification?.title}");
-    print("**** Body: ${message.notification?.body}");
-    print("**** Sent Time: ${message.sentTime}");
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-    // Save the notification to Firebase Realtime Database
-    await saveNotificationToFirebase(message);
+    print("Notification received:");
+    print("Title: ${message.notification?.title}");
+    print("Body: ${message.notification?.body}");
+    print("Sent Time: ${message.sentTime}");
 
-    // Show a local notification
-    await showLocalNotification(message);
-  } catch (e) {
-    print("Error in handling foreground notification: $e");
-  }
-}
-
-// Function to save the notification to Firebase Realtime Database
-Future<void> saveNotificationToFirebase(RemoteMessage message) async {
-  try {
+    // Save message to Firebase Realtime Database
     DatabaseReference messagesRef = FirebaseDatabase.instance.ref("messages");
     await messagesRef.push().set({
       'title': message.notification?.title ?? "No title",
       'body': message.notification?.body ?? "No body",
       'date': message.sentTime?.toString() ?? "No date",
     });
-    print("Notification saved to Firebase");
+
+    print("Message saved to Firebase");
+
+    // Show local notification
+    if (message.notification != null) {
+      await flutterLocalNotificationsPlugin.show(
+        0, // Notification ID
+        message.notification!.title, // Title
+        message.notification!.body, // Body
+        NotificationDetails(
+          android: AndroidNotificationDetails(
+            'default_channel_id', // Channel ID
+            'Default Channel', // Channel Name
+            channelDescription:
+            'Your notification description', // Channel Description
+            importance: Importance.high,
+            priority: Priority.high,
+            showWhen: false,
+          ),
+        ),
+      );
+    }
   } catch (e) {
-    print("Error saving notification to Firebase: $e");
-  }
-}
-
-// Function to show a local notification
-Future<void> showLocalNotification(RemoteMessage message) async {
-  try {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'default_channel_id', // Channel ID
-      'Default Channel', // Channel Name
-      channelDescription: 'Channel for foreground notifications', // Description
-      importance: Importance.high,
-      priority: Priority.high,
-    );
-
-    const NotificationDetails notificationDetails = NotificationDetails(
-      android: androidDetails,
-    );
-
-    await flutterLocalNotificationsPlugin.show(
-      message.hashCode, // Unique notification ID
-      message.notification?.title ?? "No title", // Title
-      message.notification?.body ?? "No body", // Body
-      notificationDetails, // Notification details
-    );
-    print("Local notification displayed");
-  } catch (e) {
-    print("Error displaying local notification: $e");
+    print("Error saving notification: ${e.toString()}");
   }
 }
 

@@ -1,94 +1,12 @@
-// import 'package:flutter/material.dart';
-// import 'package:firebase_messaging/firebase_messaging.dart';
-//
-// final List<String> channels = [
-//   "Gold",
-//   "Silver",
-//   "Platinum",
-//   "Copper",
-//   "Aluminum",
-//   "BitCoin",
-//   "Iron"
-// ];
-//
-// class MyHomePage extends StatefulWidget {
-//   const MyHomePage({super.key});
-//
-//   @override
-//   State<MyHomePage> createState() => _MyHomePageState();
-// }
-//
-// class _MyHomePageState extends State<MyHomePage> {
-//   final Set<String> _subscribedChannels = {};
-//
-//   void _subscribeToChannel(String channel) async {
-//     setState(() {
-//       _subscribedChannels.add(channel);
-//     });
-//     await FirebaseMessaging.instance.subscribeToTopic(channel);
-//   }
-//
-//   void _unsubscribeFromChannel(String channel) async {
-//     setState(() {
-//       _subscribedChannels.remove(channel);
-//     });
-//     await FirebaseMessaging.instance.unsubscribeFromTopic(channel);
-//
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: const Text("Channels"
-//         ,
-//           style: TextStyle(
-//             color: Colors.white,
-//           ),),
-//         backgroundColor: Colors.black,
-//       ),
-//       body: Column(
-//         children: [
-//           Expanded(
-//             child: ListView(
-//               children: channels.map((channel) {
-//                 final bool isSubscribed = _subscribedChannels.contains(channel);
-//                 return ListTile(
-//                   title: Text(channel),
-//                   trailing: TextButton(
-//                     onPressed: () {
-//                       isSubscribed
-//                           ? _unsubscribeFromChannel(channel)
-//                           : _subscribeToChannel(channel);
-//                     },
-//                     child: Text(
-//                       isSubscribed ? "Unsubscribe" : "Subscribe",
-//                       style: TextStyle(
-//                         color: isSubscribed ? Colors.red : Colors.blue,
-//                       ),
-//                     ),
-//                   ),
-//                 );
-//               }).toList(),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 final List<String> channels = [
-  "Gold",
-  "Silver",
-  "Platinum",
-  "Copper",
-  "Aluminum",
-  "BitCoin",
-  "Iron",
-  "Zinc"
+  "Sports",
+  "News",
+  "Technology",
+  "Music",
+  "Movies",
 ];
 
 class MyHomePage extends StatefulWidget {
@@ -99,96 +17,138 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  // A set to track subscribed channels
   final Set<String> _subscribedChannels = {};
 
+  // Function to subscribe to a channel/topic
   void _subscribeToChannel(String channel) async {
+    await FirebaseMessaging.instance.subscribeToTopic(channel);
     setState(() {
       _subscribedChannels.add(channel);
     });
-    await FirebaseMessaging.instance.subscribeToTopic(channel);
+    _showToast("Subscribed to $channel", Colors.green);
   }
 
+  // Function to unsubscribe from a channel/topic
   void _unsubscribeFromChannel(String channel) async {
+    await FirebaseMessaging.instance.unsubscribeFromTopic(channel);
     setState(() {
       _subscribedChannels.remove(channel);
     });
-    await FirebaseMessaging.instance.unsubscribeFromTopic(channel);
+    _showToast("Unsubscribed from $channel", Colors.red);
+  }
+
+  // Function to show a toast/snackbar
+  void _showToast(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+        duration: const Duration(milliseconds: 1500),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(
-          "Channels",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        backgroundColor: Color(0xFF000000),
-        elevation: 5,
+        title: const Text("Your Channels"),
+        backgroundColor: Colors.blue,
       ),
-      body: Container(
-        color: Colors.grey[100],
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(12.0),
-                children: channels.map((channel) {
-                  final bool isSubscribed = _subscribedChannels.contains(channel);
-                  return Card(
-                    elevation: 3,
-                    margin: const EdgeInsets.symmetric(vertical: 8.0),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 10.0,
-                      ),
-                      tileColor: isSubscribed
-                          ? Colors.deepPurple[50]
-                          : Colors.white,
-                      title: Text(
-                        channel,
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      trailing: ElevatedButton(
-                        onPressed: () {
-                          isSubscribed
-                              ? _unsubscribeFromChannel(channel)
-                              : _subscribeToChannel(channel);
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor:
-                          isSubscribed ? Color(0xFF697565) : Color(0xFFFF6500) ,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: Text(
-                          isSubscribed ? "Unsubscribe" : "Subscribe",
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(),
+      body: _subscribedChannels.isEmpty
+          ? Center(
+        child: Text(
+          "No Subscribed Channels",
+          style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+        ),
+      )
+          : ListView.builder(
+        itemCount: _subscribedChannels.length,
+        itemBuilder: (context, index) {
+          String channel = _subscribedChannels.elementAt(index);
+
+          return Card(
+            margin:
+            const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+            elevation: 4,
+            child: ListTile(
+
+              title: Text(
+                channel,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
+              ),
+              trailing: ElevatedButton.icon(
+                onPressed: () {
+                  _unsubscribeFromChannel(channel);
+                },
+                icon: const Icon(Icons.cancel, size: 20),
+                label: const Text("Unsubscribe"),
+                style: ElevatedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.redAccent,
+                ),
               ),
             ),
-          ],
-        ),
+          );
+        },
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _showChannelSelector(),
+        backgroundColor: Colors.blueAccent,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  // Channel selector dialog
+  void _showChannelSelector() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Subscribe to a Channel"),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: channels.length,
+              itemBuilder: (context, index) {
+                String channel = channels[index];
+                bool isSubscribed = _subscribedChannels.contains(channel);
+
+                return ListTile(
+                  title: Text(channel),
+                  trailing: Switch(
+                    value: isSubscribed,
+                    onChanged: (bool value) {
+                      Navigator.of(context).pop();
+                      if (value) {
+                        _subscribeToChannel(channel);
+                      } else {
+                        _unsubscribeFromChannel(channel);
+                      }
+                    },
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("Close"),
+            ),
+          ],
+        );
+      },
     );
   }
 }

@@ -1,69 +1,140 @@
-import 'dart:developer';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:minerals_prices/pages/users.dart';
-
-import '../models/user.dart';
 import '../services/auth.dart';
 import 'channels.dart';
-
+import 'users.dart';
+import 'splash.dart';
 
 class Home extends StatelessWidget {
-  const Home({super.key});
+  const Home({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+      body: Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Colors.white,
+                  Color(0xFFF5F5F5),
+                ],
+              ),
+            ),
+          ),
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 40),
+                  _buildActionCards(context),
+                  const Spacer(),
+                  _buildLogoutButton(context),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    final user = FirebaseAuth.instance.currentUser;
+    final email = user != null ? user.email! : "";
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '',
+          style: GoogleFonts.raleway(
+            textStyle: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 32,
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          email,
+          style: GoogleFonts.raleway(
+            textStyle: TextStyle(
+              color: Colors.black.withOpacity(0.7),
+              fontWeight: FontWeight.w500,
+              fontSize: 20,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionCards(BuildContext context) {
+    return Column(
+      children: [
+        _buildCard(
+          context,
+          "Show Users",
+          Icons.people_outline,
+              () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => UsersPage()),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildCard(
+          context,
+          "View Channels",
+          Icons.chat_bubble_outline,
+              () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => ChannelsPage()),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCard(
+      BuildContext context, String title, IconData icon, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        elevation: 2,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
             children: [
-              Text(
-                'Hello👋',
-                style: GoogleFonts.raleway(
+              Icon(icon, size: 32, color: Colors.black),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  title,
+                  style: GoogleFonts.raleway(
                     textStyle: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20)),
+                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Colors.black,
+                    ),
+                  ),
+                ),
               ),
-              const SizedBox(
-                height: 10,
-              ),
-              Text(
-                FirebaseAuth.instance.currentUser!.email!.toString(),
-                style: GoogleFonts.raleway(
-                    textStyle: const TextStyle(
-                        color: Colors.black,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20)),
-              ),
-              const SizedBox(
-                height: 30,
-              ),
-              _logout(context),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => UsersPage()),
-                  );
-                },
-                child: const Text("Show Users"),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ChannelsPage()),
-                  );
-                },
-                child: const Text("View Channels"),
-              ),
+              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.black),
             ],
           ),
         ),
@@ -71,53 +142,34 @@ class Home extends StatelessWidget {
     );
   }
 
-  Widget _logout(BuildContext context) {
-    return ElevatedButton(
-      style: ElevatedButton.styleFrom(
-        backgroundColor: const Color(0xff0D6EFD),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(14),
+  Widget _buildLogoutButton(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 56,
+      child: ElevatedButton(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.black,
+          foregroundColor: Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        minimumSize: const Size(double.infinity, 60),
-        elevation: 0,
-      ),
-      onPressed: () async {
-        await AuthService().signout(context: context);
-      },
-      child: const Text("Sign Out"),
-    );
-  }
-
-  void _showUsers(BuildContext context, List<UserModel> users) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Users List'),
-          content: SizedBox(
-            width: double.maxFinite,
-            height: 300, // Set height of the dialog
-            child: ListView.builder(
-              itemCount: users.length,
-              itemBuilder: (context, index) {
-                UserModel user = users[index];
-                return ListTile(
-                  title: Text(user.username ?? 'No Name'),
-                  subtitle: Text(user.email ?? 'No Email'),
-                );
-              },
+        onPressed: () async {
+          await AuthService().signout(context: context);
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => SplashScreen()),
+          );
+        },
+        child: Text(
+          "Sign Out",
+          style: GoogleFonts.raleway(
+            textStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
             ),
           ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Close'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+        ),
+      ),
     );
   }
 }

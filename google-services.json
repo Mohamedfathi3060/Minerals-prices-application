@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "641656307765",
+    "firebase_url": "https://minerals-prices-default-rtdb.firebaseio.com",
+    "project_id": "minerals-prices",
+    "storage_bucket": "minerals-prices.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:641656307765:android:b2a3fdf6e0321638deb17c",
+        "android_client_info": {
+          "package_name": "com.example.minerals_prices"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "641656307765-2v5qlunnt8ht1r9qdemnf3rq3bpr34p6.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDWQxDnZgvlU2qQajFXmdNep2tezCGabGo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "641656307765-2v5qlunnt8ht1r9qdemnf3rq3bpr34p6.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "641656307765-5m896ftpvcofc4ua84om9hnhaho0ov15.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.mineralsPrices"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

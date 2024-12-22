@@ -1,9 +1,7 @@
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-import 'package:get/get.dart';
-import 'package:minerals_prices/models/message.dart';
-import 'package:minerals_prices/services/chat.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ChatPage extends StatefulWidget {
   final String channelId;
@@ -16,127 +14,163 @@ class ChatPage extends StatefulWidget {
 
 class _ChatPageState extends State<ChatPage> {
   final TextEditingController _messageController = TextEditingController();
-  final MessageService messageService = MessageService();
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
-  String? channelTitle;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final ScrollController _scrollController = ScrollController();
+  String? _channelTitle;
 
   @override
   void initState() {
     super.initState();
-    _getChannelTitle();
+    _fetchChannelTitle();
   }
 
-  // Fetch the channel title from Firestore
-  Future<void> _getChannelTitle() async {
-    try {
-      final QuerySnapshot querySnapshot = await firestore
-          .collection('Channels')
-          .where('id', isEqualTo: widget.channelId)
-          .get();
-
-      if (querySnapshot.docs.isNotEmpty) {
-        final userDoc = querySnapshot.docs.first;
-        setState(() {
-          channelTitle = userDoc[
-          'title']; // Assuming 'title' is the field for the channel's name
-        });
-      }
-    } catch (e) {
-      print("Error fetching channel title: $e");
-    }
+  Future<void> _fetchChannelTitle() async {
+    final channelDoc = await _firestore.collection('Channels').doc(widget.channelId).get();
+    setState(() {
+      _channelTitle = channelDoc.data()?['title'] ?? 'Chat';
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(channelTitle ??
-            'Loading...'), // Show title or 'Loading...' until it is fetched
+        title: Text(
+          _channelTitle ?? 'Chat',
+          style: GoogleFonts.raleway(
+            textStyle: const TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        backgroundColor: Colors.white,
       ),
       body: Column(
         children: [
-          Expanded(
-            child: StreamBuilder<List<MessageModel>>(
-              stream:
-              messageService.getMessagesStreamByChannelId(widget.channelId),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+          Expanded(child: _buildMessageList()),
+          _buildMessageInput(),
+        ],
+      ),
+    );
+  }
 
-                if (snapshot.hasError) {
-                  return Center(child: Text('Error: ${snapshot.error}'));
-                }
+  Widget _buildMessageList() {
+    return StreamBuilder<QuerySnapshot>(
+      stream: _firestore
+          .collection('Channels')
+          .doc(widget.channelId)
+          .collection('Messages')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
 
-                if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                  return const Center(child: Text('No messages yet.'));
-                }
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
 
-                final messages = snapshot.data!;
-                return ListView.builder(
-                  reverse: true,
-                  itemCount: messages.length,
-                  itemBuilder: (context, index) {
-                    final message = messages[index];
-                    return ListTile(
-                      title: Text(message.username ?? 'Unknown User'),
-                      subtitle: Text(message.text ?? ""),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-          SingleChildScrollView(
-            child: Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      decoration: const InputDecoration(
-                        hintText: 'Type a message...',
+        final messages = snapshot.data?.docs ?? [];
+
+        return ListView.builder(
+          reverse: true,
+          controller: _scrollController,
+          itemCount: messages.length,
+          itemBuilder: (context, index) {
+            final message = messages[index];
+            final isCurrentUser = message['userId'] == FirebaseAuth.instance.currentUser?.uid;
+
+            return Align(
+              alignment: isCurrentUser ? Alignment.centerRight : Alignment.centerLeft,
+              child: Container(
+                margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: isCurrentUser ? Colors.black : Colors.grey[200],
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      message['username'] ?? 'Unknown User',
+                      style: GoogleFonts.raleway(
+                        textStyle: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: isCurrentUser ? Colors.white : Colors.black,
+                        ),
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: () async {
-                      final user = FirebaseAuth.instance.currentUser;
-                      if (user != null) {
-                        // Query the Users collection where the email matches
-                        final QuerySnapshot querySnapshot = await firestore
-                            .collection('Users')
-                            .where('email', isEqualTo: user.email)
-                            .get();
-                        final userDoc = querySnapshot.docs.first;
-                        final username = userDoc['username'];
+                    const SizedBox(height: 4),
+                    Text(
+                      message['text'] ?? '',
+                      style: GoogleFonts.raleway(
+                        textStyle: TextStyle(
+                          color: isCurrentUser ? Colors.white : Colors.black,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
 
-                        final message = MessageModel(
-                          username: username,
-                          userId: user.uid,
-                          userEmail: user.email,
-                          text: _messageController.text.trim(),
-                          dateTime: DateTime.now(),
-                        );
-                        await messageService.addMessage(
-                            widget.channelId, message);
-                        _messageController.clear();
-                      } else {
-                        Get.snackbar("Error", "User not authenticated",
-                            snackPosition: SnackPosition.BOTTOM,
-                            backgroundColor: Colors.redAccent.withOpacity(0.1),
-                            colorText: Colors.red);
-                      }
-                    },
-                  ),
-                ],
+  Widget _buildMessageInput() {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      child: Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _messageController,
+              decoration: InputDecoration(
+                hintText: 'Type a message...',
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
+          ),
+          IconButton(
+            icon: const Icon(Icons.send, color: Colors.white),
+            onPressed: _sendMessage,
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _sendMessage() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && _messageController.text.isNotEmpty) {
+      await _firestore
+          .collection('Channels')
+          .doc(widget.channelId)
+          .collection('Messages')
+          .add({
+        'text': _messageController.text,
+        'timestamp': FieldValue.serverTimestamp(),
+        'userId': user.uid,
+        'username': user.displayName ?? 'Anonymous',
+      });
+      _messageController.clear();
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
   }
 }
