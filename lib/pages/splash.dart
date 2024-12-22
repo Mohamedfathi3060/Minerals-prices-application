@@ -47,7 +47,7 @@ class SplashScreen extends StatelessWidget {
                   'Minerals Prices',
                   style: GoogleFonts.montserrat(
                     textStyle: const TextStyle(
-                      fontSize: 42,
+                      fontSize: 46,
                       fontWeight: FontWeight.bold,
                       color: Colors.white,
                     ),
