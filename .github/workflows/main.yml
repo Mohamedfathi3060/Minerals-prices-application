@@ -1,0 +1,38 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the project code
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # Step 2: Set up Flutter SDK with a specific version
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.24.5" # Use a Flutter version that includes Dart 3.5.4 or higher
+
+      # Step 3: Verify Flutter and Dart versions
+      - name: Verify Flutter version
+        run: flutter --version
+
+      # Step 4: Install project dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # Step 5: Analyze the project source code
+      # - name: Analyze project source
+      #   run: flutter analyze
+
+      # Step 6: Run Flutter tests
+      # - name: Run Flutter tests
+      #   run: flutter test
